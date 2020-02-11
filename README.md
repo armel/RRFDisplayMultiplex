@@ -21,7 +21,22 @@ Quelques explications :
 - La sortie 21 de l'ESP32 est reliée à l'entrée SDA du TCA9548A.
 - Les sorties 2, 4 et 5 de l'ESP32 servent pour les LEDs.
 - On utilise les sorties 5V et GND de l'ESP32 pour alimenter les écrans et le TCA9548A.
-- Il reste juste à cabler les sorties SC[0-7] et SD[0-7] du TCA9548A vers les entrées SCL et SDA des différents écrans Oled.
+- Il reste juste à cabler les sorties SC[0-3] et SD[0-3] du TCA9548A vers les entrées SCL et SDA des différents écrans Oled.
+
+## Remarques
+
+Rien ne vous empêche de connecter jusqu'à 8 périphériques I2C. Si vous avez des écrans en plus ou des capteurs divers, le TCA9548A est parfait pour cela.
+
+Par convention, j'ai utilisé les couleurs suivantes pour les cables et straps :
+
+
+| Couleur    |   Fonction  | 
+| ---------- | ----------- | 
+| Rouge      |    +5V      | 
+| Noir       |   GND       |
+| Vert.   	|   CLOCK     | 
+| Violet     |    DATA     | 
+| Orange     |    LEDs     | 
 
 
 ![alt text](https://github.com/armel/RRFTracker_Multiplex/blob/master/RRFTracker_multiplex.png)
