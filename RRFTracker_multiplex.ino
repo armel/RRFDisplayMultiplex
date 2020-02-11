@@ -12,21 +12,20 @@
 #include <string.h>
 
 #define TCAADDR 0x70 // I2C Multiplexer ADDR
-#define LED_UP 14
-#define LED_OK 4
 #define LED_KO 5
+#define LED_UP 2
+#define LED_OK 4
 
 // wifi parameter
 
 const char* ssid     = "F4HWN";
-const char* password = "petitchaton";
+const char* password = "hamspirit4ever";
 
 // JSOn endpoint
 
 String endpoint[] = {
   "http://rrf.f5nlg.ovh:8080/RRFTracker/RRF-today/rrf_tiny.json",
   "http://rrf.f5nlg.ovh:8080/RRFTracker/TECHNIQUE-today/rrf_tiny.json",
-  "http://rrf.f5nlg.ovh:8080/RRFTracker/INTERNATIONAL-today/rrf_tiny.json",
   "http://rrf.f5nlg.ovh:8080/RRFTracker/BAVARDAGE-today/rrf_tiny.json",
   "http://rrf.f5nlg.ovh:8080/RRFTracker/LOCAL-today/rrf_tiny.json"
 };
@@ -52,7 +51,7 @@ U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C display128x32(U8G2_R0, /* reset=*/ U8X8_P
 
 // how many screens are connected to the TCA I2C Multiplexer, min 2, max 8
 
-#define NUMSCREENS 5
+#define NUMSCREENS 4
 
 // display array, order matters, NUMSCREENS value matters too :-)
 // put them in the same order as on the TCA
@@ -64,8 +63,7 @@ display OLEDS[NUMSCREENS] = {
   { &display128x64, 0, U8G2_R3},
   { &display128x64, 1, U8G2_R3},
   { &display128x64, 2, U8G2_R3},
-  { &display128x64, 3, U8G2_R3},
-  { &display128x64, 4, U8G2_R3}
+  { &display128x64, 3, U8G2_R3}
 };
 
 
@@ -107,8 +105,8 @@ void setup()   {
     tcaselect(OLEDS[i].i2cnum);
     OLEDS[i].display->begin();
   }
-  pinMode (LED_UP, OUTPUT);
   pinMode (LED_KO, OUTPUT);
+  pinMode (LED_UP, OUTPUT);
   pinMode (LED_OK, OUTPUT);
 }
 
@@ -130,8 +128,9 @@ void loop() {
   if ((WiFi.status() == WL_CONNECTED)) { //check the current connection status
 
     for (uint8_t i = 0; i < NUMSCREENS; i++) {
-
+            
       http.begin(endpoint[i]); //specify the URL
+      http.setTimeout(750);
       int httpCode = http.GET();  //make the request
 
       if (httpCode > 0) { //check for the returning code
@@ -143,14 +142,16 @@ void loop() {
 
         // test if parsing succeeds
         if (error) {
-          digitalWrite(LED_KO, HIGH);
           digitalWrite(LED_OK, LOW);
-
-          Serial.println("deserializeJson() failed");
+          digitalWrite(LED_KO, HIGH);
+          Serial.print("Ecran ");
+          Serial.print(OLEDS[i].i2cnum);
+          Serial.println(" - DeserializeJson() failed");
+          continue;
         }
         else {
-          digitalWrite(LED_KO, LOW);
           digitalWrite(LED_OK, HIGH);
+          digitalWrite(LED_KO, LOW);
 
           salon = doc["abstract"][0]["Salon"];
           date = doc["abstract"][0]["Date"];
@@ -183,9 +184,14 @@ void loop() {
           }
         }
       }
-
       else {
-        Serial.println("Error on HTTP request");
+        digitalWrite(LED_OK, LOW);
+        digitalWrite(LED_KO, HIGH);
+        Serial.print("Ecran ");
+        Serial.print(OLEDS[i].i2cnum);
+        Serial.print(" - Error on HTTP request -> ");
+        Serial.println(httpCode);
+        continue;
       }
 
       http.end(); //free the resources
@@ -208,12 +214,12 @@ void loop() {
             // RRFTracker                        
             OLEDS[i].display->setFont(u8g2_font_profont10_tf);
             OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width("RRFTracker")) / 2 , 8);
-            OLEDS[i].display->print("RRFTracker");
+            OLEDS[i].display->print("RRFTRACKER");
         }
         else if(counter < 16) {           
             // tx total
             tmp_str = String(tx_total);
-            tmp_str = "TX total " + tmp_str;
+            tmp_str = "TX TOTAL " + tmp_str;
                         
             OLEDS[i].display->setFont(u8g2_font_profont10_tf);
             OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 8);
@@ -222,7 +228,7 @@ void loop() {
         else if(counter < 19) {           
             // link total
             tmp_str = String(link);
-            tmp_str = "Links total " + tmp_str;
+            tmp_str = "LINKS TOTAL " + tmp_str;
                         
             OLEDS[i].display->setFont(u8g2_font_profont10_tf);
             OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 8);
@@ -231,7 +237,7 @@ void loop() {
         else if(counter < 22) {           
             // BF total
             tmp_str = String(emission);
-            tmp_str = "BF Total " + tmp_str;
+            tmp_str = "BF TOTAL " + tmp_str;
                       
             OLEDS[i].display->setFont(u8g2_font_profont10_tf);
             OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 8);
@@ -254,36 +260,50 @@ void loop() {
         }
         
         // last
-        
-        strncpy (hour, last_h_1, 5);
+
         OLEDS[i].display->setFont(u8g2_font_blipfest_07_tr);
+
+        strncpy (hour, last_h_1, 5);
         OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(hour) - 1, 18);
         OLEDS[i].display->print(hour);
         OLEDS[i].display->setCursor(15, 18);
         OLEDS[i].display->print("1");
-        OLEDS[i].display->setFont(u8g2_font_profont10_tf);
-        OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(last_c_1)) / 2 , 18);
-        OLEDS[i].display->print(last_c_1);
-
+        
         strncpy (hour, last_h_2, 5);
-        OLEDS[i].display->setFont(u8g2_font_blipfest_07_tr);
         OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(hour) - 1, 26);
-        OLEDS[i].display->print(last_h_2);
+        OLEDS[i].display->print(hour);
         OLEDS[i].display->setCursor(15, 26);
         OLEDS[i].display->print("2");
-        OLEDS[i].display->setFont(u8g2_font_profont10_tf);
-        OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(last_c_2)) / 2 , 26);
-        OLEDS[i].display->print(last_c_2);
-       
+        
         strncpy (hour, last_h_3, 5);
-        OLEDS[i].display->setFont(u8g2_font_blipfest_07_tr);
         OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(hour) - 1, 34);
-        OLEDS[i].display->print(last_h_3);
+        OLEDS[i].display->print(hour);
         OLEDS[i].display->setCursor(15, 34);
-        OLEDS[i].display->print("3");
+        OLEDS[i].display->print("2");
+
+        
         OLEDS[i].display->setFont(u8g2_font_profont10_tf);
-        OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(last_c_3)) / 2 , 34);
-        OLEDS[i].display->print(last_c_3);
+
+        tmp_str = String(last_c_1);
+        tmp_str.replace("(", "");
+        tmp_str.replace(")", "");
+        if (tot != 0) {
+          tmp_str = ">" + tmp_str + "<";
+        }
+        OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 18);
+        OLEDS[i].display->print(tmp_str);
+
+        tmp_str = String(last_c_2);
+        tmp_str.replace("(", "");
+        tmp_str.replace(")", "");
+        OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 26);
+        OLEDS[i].display->print(tmp_str);
+
+        tmp_str = String(last_c_3);
+        tmp_str.replace("(", "");
+        tmp_str.replace(")", "");
+        OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 34);
+        OLEDS[i].display->print(tmp_str);
                
         // bottom screen
 
@@ -291,7 +311,9 @@ void loop() {
           digitalWrite(LED_UP, HIGH);
           OLEDS[i].display->setContrast(255);
    
-          OLEDS[i].display->setFont(u8g2_font_profont29_tf);  
+          //OLEDS[i].display->setFont(u8g2_font_profont29_tf);
+          //OLEDS[i].display->setFont(u8g2_font_bubble_tn);
+          OLEDS[i].display->setFont(u8g2_font_luBS18_tn);
           OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(last_d_1)) / 2 , 58);
           OLEDS[i].display->print(last_d_1);
         }
