@@ -11,28 +11,34 @@
 #include <ArduinoJson.h>
 #include <string.h>
 
-#define TCAADDR 0x70 // I2C Multiplexer ADDR
-#define LED_KO 5
-#define LED_UP 2
-#define LED_OK 4
+#define TCAADDR 0x70  // I2C Multiplexer ADDR
+#define LED_KO 5      // if HTTP bug    
+#define LED_UP 2      // if QSO 
+#define LED_OK 4      // if HTTP good
+#define NUMSCREENS 4  // how many screens are connected to the TCA I2C Multiplexer, min 2, max 8
+#define VERSION 1.1   // RRFTracker version
 
-// wifi parameter
+// wifi parameters
 
 const char* ssid     = "F4HWN";
-const char* password = "hamspirit4ever";
+const char* password = "petitchaton";
 
-// JSOn endpoint
+// JSON endpoint
 
 String endpoint[] = {
+  "http://rrf.f5nlg.ovh:8080/RRFTracker/BAVARDAGE-today/rrf_tiny.json",
   "http://rrf.f5nlg.ovh:8080/RRFTracker/RRF-today/rrf_tiny.json",
   "http://rrf.f5nlg.ovh:8080/RRFTracker/TECHNIQUE-today/rrf_tiny.json",
-  "http://rrf.f5nlg.ovh:8080/RRFTracker/BAVARDAGE-today/rrf_tiny.json",
   "http://rrf.f5nlg.ovh:8080/RRFTracker/LOCAL-today/rrf_tiny.json"
 };
 
 // misceleanous 
 
-int counter = 1;
+String tmp_str;
+String payload;
+String payload_old[NUMSCREENS];
+
+int counter = 0;
 
 struct display {
   U8G2 *display;
@@ -45,13 +51,8 @@ struct display {
 
 // all display types, add more if required, give them explicit names, then add them to the OLEDS 'display' array
 
-U8G2_SH1106_128X64_NONAME_F_HW_I2C display128x64(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
-U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C display128x32(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ SCL, /* data=*/ SDA);   // pin remapping with ESP8266 HW I2C
-
-
-// how many screens are connected to the TCA I2C Multiplexer, min 2, max 8
-
-#define NUMSCREENS 4
+U8G2_SH1106_128X64_NONAME_F_HW_I2C display_128_64(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C display_128_32(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ SCL, /* data=*/ SDA);   // pin remapping with ESP8266 HW I2C
 
 // display array, order matters, NUMSCREENS value matters too :-)
 // put them in the same order as on the TCA
@@ -60,12 +61,11 @@ U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C display128x32(U8G2_R0, /* reset=*/ U8X8_P
 
 display OLEDS[NUMSCREENS] = {
   /*{ &type, TCA I2C index, orientation, shared },*/
-  { &display128x64, 0, U8G2_R3},
-  { &display128x64, 1, U8G2_R3},
-  { &display128x64, 2, U8G2_R3},
-  { &display128x64, 3, U8G2_R3}
+  { &display_128_64, 0, U8G2_R3},
+  { &display_128_64, 1, U8G2_R3},
+  { &display_128_64, 2, U8G2_R3},
+  { &display_128_64, 3, U8G2_R3}
 };
-
 
 // I2C multiplexer controls
 
@@ -101,10 +101,15 @@ void setup()   {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
+  // screen setup
+  
   for (uint8_t i = 0; i < NUMSCREENS; i++) {
     tcaselect(OLEDS[i].i2cnum);
     OLEDS[i].display->begin();
   }
+
+  // LEDs setup
+  
   pinMode (LED_KO, OUTPUT);
   pinMode (LED_UP, OUTPUT);
   pinMode (LED_OK, OUTPUT);
@@ -114,28 +119,37 @@ void loop() {
   HTTPClient http;
   DynamicJsonDocument doc(8192);
 
-  String tmp_str;
-
   const char *salon, *date, *indicatif, *emission;
   const char *last_h_1, *last_c_1, *last_d_1;
   const char *last_h_2, *last_c_2, *last_d_2;
   const char *last_h_3, *last_c_3, *last_d_3;
   const char *legende[] = {"00", "06", "12", "18", "23"};
-  char hour[5] = {0};
-  int tot = 0, link = 0, tx_total = 0, max_level = 0;
-  int tx[24] = {0};
   
-  if ((WiFi.status() == WL_CONNECTED)) { //check the current connection status
+  char hour[5] = {0};
+  
+  int tot = 0, link_total = 0, link_actif = 0, tx_total = 0, max_level = 0, tx[24] = {0};
+  int optimize = 0;
+
+  if ((WiFi.status() == WL_CONNECTED)) { // check the current connection status
 
     for (uint8_t i = 0; i < NUMSCREENS; i++) {
             
-      http.begin(endpoint[i]); //specify the URL
+      http.begin(endpoint[i]); // specify the URL
       http.setTimeout(750);
-      int httpCode = http.GET();  //make the request
+      int httpCode = http.GET();  // make the request
 
-      if (httpCode > 0) { //check for the returning code
+      if (httpCode > 0) { // check for the returning code
 
-        String payload = http.getString();
+        payload = http.getString();
+
+        optimize = payload.compareTo(payload_old[i]);
+        
+        if (optimize != 0) {
+          Serial.print("Ecran ");
+          Serial.print(OLEDS[i].i2cnum);
+          Serial.println(" - Change");
+          payload_old[i] = payload;
+        }
         
         // deserialize the JSON document
         DeserializationError error = deserializeJson(doc, payload);
@@ -152,11 +166,11 @@ void loop() {
         else {
           digitalWrite(LED_OK, HIGH);
           digitalWrite(LED_KO, LOW);
-
           salon = doc["abstract"][0]["Salon"];
           date = doc["abstract"][0]["Date"];
           emission = doc["abstract"][0]["Emission cumulée"];
-          link = doc["abstract"][0]["Links connectés"];
+          link_total = doc["abstract"][0]["Links connectés"];
+          link_actif = doc["abstract"][0]["Links actifs"];
           tx_total = doc["abstract"][0]["TX total"]; 
           
           indicatif = doc["transmit"][0]["Indicatif"];
@@ -194,73 +208,90 @@ void loop() {
         continue;
       }
 
-      http.end(); //free the resources
+      http.end(); // free the resources
 
       tcaselect(OLEDS[i].i2cnum);
       OLEDS[i].display->firstPage();
       OLEDS[i].display->setFontMode(1);
       OLEDS[i].display->setDrawColor(1);
       OLEDS[i].display->drawBox(0, 1, 128, 8);
-      OLEDS[i].display->setDrawColor(0);
+      
+      for (uint8_t j = 0; j < 127; j += 2) {
+        OLEDS[i].display->drawLine(j, 0, j, 0);
+        OLEDS[i].display->drawLine(j, 9, j, 9);
+        OLEDS[i].display->drawLine(j, 35, j, 35);
+      }
       
       do {
-        if(counter < 10) {
-            // salon
-            OLEDS[i].display->setFont(u8g2_font_profont10_tf);
-            OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(salon)) / 2 , 8);
-            OLEDS[i].display->print(salon);
+
+        OLEDS[i].display->setDrawColor(0);
+        OLEDS[i].display->setFont(u8g2_font_blipfest_07_tr);
+
+        // salon
+        
+        tmp_str = String(salon);
+        OLEDS[i].display->setCursor(1 , 8);
+        OLEDS[i].display->print(tmp_str.substring(0, 3));
+
+        // hour
+        
+        int len = strlen(date);
+        OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(&date[len - 5]) - 1, 8);
+        OLEDS[i].display->print(&date[len - 5]);
+
+        // others informations
+        
+        OLEDS[i].display->setFont(u8g2_font_profont10_tf);
+
+        if(counter < 5) {           
+            // RRFTracker
+            tmp_str = "RRFTRACKER " + String(VERSION);                     
+            OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 8);
+            OLEDS[i].display->print(tmp_str);
         }
-        else if(counter < 13) {           
-            // RRFTracker                        
-            OLEDS[i].display->setFont(u8g2_font_profont10_tf);
-            OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width("RRFTracker")) / 2 , 8);
-            OLEDS[i].display->print("RRFTRACKER");
-        }
-        else if(counter < 16) {           
+        else if(counter < 10) {           
             // tx total
             tmp_str = String(tx_total);
             tmp_str = "TX TOTAL " + tmp_str;
                         
-            OLEDS[i].display->setFont(u8g2_font_profont10_tf);
             OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 8);
             OLEDS[i].display->print(tmp_str);
         }
-        else if(counter < 19) {           
+        else if(counter < 15) {           
             // link total
-            tmp_str = String(link);
+            tmp_str = String(link_total);
             tmp_str = "LINKS TOTAL " + tmp_str;
                         
-            OLEDS[i].display->setFont(u8g2_font_profont10_tf);
             OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 8);
             OLEDS[i].display->print(tmp_str);
         }
-        else if(counter < 22) {           
+        else if(counter < 20) {           
+            // link actifs
+            tmp_str = String(link_actif);
+            tmp_str = "LINKS ACTIFS " + tmp_str;
+                        
+            OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 8);
+            OLEDS[i].display->print(tmp_str);
+        }
+        else if(counter < 25) {           
             // BF total
             tmp_str = String(emission);
-            tmp_str = "BF TOTAL " + tmp_str;
-                      
-            OLEDS[i].display->setFont(u8g2_font_profont10_tf);
+            if (tmp_str.length() == 5) {
+              tmp_str = "BF TOTAL " + tmp_str + "s";
+              tmp_str.replace(":", "m ");
+            }
+            else {
+              tmp_str = "BF TOTAL " + tmp_str.substring(0, 5) + "m";
+              tmp_str.replace(":", "h ");
+            }
+                                  
             OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 8);
             OLEDS[i].display->print(tmp_str);
         }
-     
-        // hour
-        
-        int len = strlen(date);
-        OLEDS[i].display->setFont(u8g2_font_blipfest_07_tr);
-        OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(&date[len - 5]) - 1, 8);
-        OLEDS[i].display->print(&date[len - 5]);
-
-        OLEDS[i].display->setDrawColor(1);
-
-        for (uint8_t j = 0; j < 127; j += 2) {
-          OLEDS[i].display->drawLine(j, 0, j, 0);
-          OLEDS[i].display->drawLine(j, 9, j, 9);
-          OLEDS[i].display->drawLine(j, 35, j, 35);
-        }
-        
+                             
         // last
 
+        OLEDS[i].display->setDrawColor(1);
         OLEDS[i].display->setFont(u8g2_font_blipfest_07_tr);
 
         strncpy (hour, last_h_1, 5);
@@ -281,7 +312,6 @@ void loop() {
         OLEDS[i].display->setCursor(15, 34);
         OLEDS[i].display->print("2");
 
-        
         OLEDS[i].display->setFont(u8g2_font_profont10_tf);
 
         tmp_str = String(last_c_1);
@@ -310,16 +340,13 @@ void loop() {
         if (tot != 0) { // if transmit
           digitalWrite(LED_UP, HIGH);
           OLEDS[i].display->setContrast(255);
-   
-          //OLEDS[i].display->setFont(u8g2_font_profont29_tf);
-          //OLEDS[i].display->setFont(u8g2_font_bubble_tn);
           OLEDS[i].display->setFont(u8g2_font_luBS18_tn);
           OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(last_d_1)) / 2 , 58);
           OLEDS[i].display->print(last_d_1);
         }
         else {  // else histogram
           digitalWrite(LED_UP, LOW);
-          OLEDS[i].display->setContrast(16);
+          OLEDS[i].display->setContrast(1);
           
           int x = 4;
           int tmp = 0;
@@ -349,7 +376,7 @@ void loop() {
   // counter for change
   
   counter++;
-  if (counter == 22) {
+  if (counter == 25) {
     counter = 1;
   }
 }
