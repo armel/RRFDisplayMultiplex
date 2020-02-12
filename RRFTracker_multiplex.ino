@@ -21,7 +21,7 @@
 // wifi parameters
 
 const char* ssid     = "F4HWN";
-const char* password = "petitchaton";
+const char* password = "hamspirit4ever";
 
 // JSON endpoint
 
