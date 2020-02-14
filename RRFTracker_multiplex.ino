@@ -12,7 +12,7 @@
 #include <string.h>
 
 #define TCAADDR 0x70  // I2C Multiplexer ADDR
-#define LED_QSO 0    // if QSO
+#define LED_QSO 0     // if QSO
 #define LED_BUG 5     // if BUG    
 
 #define LED_BAV 16    // if BAV
@@ -434,6 +434,8 @@ void loop() {
     alternate = 1 - alternate;
   }
 
+  // manage LED_BUG
+  
   if (buggy > 0 && buggy_back == 0) {
     for (uint8_t j = 0; j <= 40; j += 2) {
       ledcWrite(pwm_channel, j);
@@ -449,6 +451,4 @@ void loop() {
 
   buggy_back = buggy;
   buggy = 0;
-  //Serial.println(buggy_back);
-  //Serial.println(buggy);
 }
