@@ -9,8 +9,8 @@ Voici la liste des composants dont vous aurez besoin :
 - 1 ESP32
 - 1 TCA9548A
 - 4 écrans Oled type SD1106 128x64 pixels
-- 3 résistances 330 ohms
-- 3 LEDs de couleurs (rouge, vert, bleu...)
+- 6 résistances 330 ohms
+- 6 LEDs de couleurs (rouge, vert, bleu...)
 - quelques cables et straps
 
 ## Schéma de montage
@@ -19,7 +19,7 @@ Quelques explications :
 
 - La sortie 22 de l'ESP32 est reliée à l'entrée SCL du TCA9548A.
 - La sortie 21 de l'ESP32 est reliée à l'entrée SDA du TCA9548A.
-- Les sorties 2, 4 et 5 de l'ESP32 servent pour les LEDs.
+- Les sorties 0, 2, 4, 5, 16 et 17 de l'ESP32 servent pour les LEDs.
 - On utilise les sorties 5V et GND de l'ESP32 pour alimenter les écrans et le TCA9548A.
 - Il reste juste à cabler les sorties SC[0-3] et SD[0-3] du TCA9548A vers les entrées SCL et SDA des différents écrans Oled.
 
