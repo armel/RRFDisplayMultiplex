@@ -1,4 +1,4 @@
-# RRFTracker_Multiplex
+# RRFDisplayMultiplex
 Suivi temps réel de l'activité du réseau [RRF](https://f5nlg.wordpress.com/2015/12/28/nouveau-reseau-french-repeater-network/) (Réseau des Répéteurs Francophones). Une video du fonctionnement est visible sur [Youtube](https://www.youtube.com/watch?v=APK_efbEtOQ) ;)
 
 ## Liste des composants
@@ -23,7 +23,7 @@ Quelques explications :
 - On utilise les sorties 5V et GND de l'ESP32 pour alimenter les écrans et le TCA9548A.
 - Il reste juste à cabler les sorties SC[0-3] et SD[0-3] du TCA9548A vers les entrées SCL et SDA des différents écrans Oled.
 
-![alt text](https://github.com/armel/RRFTracker_Multiplex/blob/master/RRFTracker_multiplex.png)
+![alt text](https://github.com/armel/RRFTDisplayMultiplex/blob/master/RRFDisplayMultiplex.png)
 
 ## Remarques
 

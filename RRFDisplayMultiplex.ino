@@ -1,5 +1,5 @@
 /*
-   RRFTracker Multiplex
+   RRFDisplayMultiplex
    F4HWN Armel
 */
 
@@ -21,7 +21,7 @@
 #define LED_LOC 17    // if LOC
 
 #define NUMSCREENS 4  // how many screens are connected to the TCA I2C Multiplexer, min 2, max 8
-#define VERSION 2.3   // RRFTracker version
+#define VERSION 2.3   // RRFDisplayMultiplex version
 
 // wifi parameters
 
@@ -260,12 +260,12 @@ void loop() {
         // others informations
         
         if(counter < 5) {           
-            // RRFTracker
+            // RRFDisplay
             OLEDS[i].display->setFont(u8g2_font_open_iconic_all_1x_t);
             OLEDS[i].display->drawGlyph(1, 10, 0x0066);
             
             OLEDS[i].display->setFont(u8g2_font_5x7_tf);
-            tmp_str = "RRFTRACKER " + String(VERSION);                     
+            tmp_str = "RRFDISPLAY " + String(VERSION);                     
             OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 9);
             OLEDS[i].display->print(tmp_str);
         }
