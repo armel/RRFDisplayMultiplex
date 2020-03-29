@@ -23,7 +23,7 @@ Quelques explications :
 - On utilise les sorties 5V et GND de l'ESP32 pour alimenter les écrans et le TCA9548A.
 - Il reste juste à cabler les sorties SC[0-3] et SD[0-3] du TCA9548A vers les entrées SCL et SDA des différents écrans Oled.
 
-![alt text](https://github.com/armel/RRFTDisplayMultiplex/blob/master/RRFDisplayMultiplex.png)
+![alt text](https://github.com/armel/RRFDisplayMultiplex/blob/master/RRFDisplayMultiplex.png)
 
 ## Remarques
 
