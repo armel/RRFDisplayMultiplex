@@ -25,8 +25,8 @@
 
 // wifi parameters
 
-const char* ssid     = "F4HWN";
-const char* password = "petitchaton";
+const char* ssid     = "yourssid";
+const char* password = "yourpassword";
 
 // JSON endpoint
 
@@ -337,68 +337,71 @@ void loop() {
             OLEDS[i].display->print(tmp_str);
         }
                              
-        // last
-
-        OLEDS[i].display->setDrawColor(1);
-        OLEDS[i].display->setFont(u8g2_font_blipfest_07_tr);
-
-        strncpy (hour, last_h_1, 5);
-        OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(hour) - 1, 18);
-        OLEDS[i].display->print(hour);
-        OLEDS[i].display->setCursor(15, 18);
-        OLEDS[i].display->print("1");
-        
-        strncpy (hour, last_h_2, 5);
-        OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(hour) - 1, 26);
-        OLEDS[i].display->print(hour);
-        OLEDS[i].display->setCursor(15, 26);
-        OLEDS[i].display->print("2");
-        
-        strncpy (hour, last_h_3, 5);
-        OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(hour) - 1, 34);
-        OLEDS[i].display->print(hour);
-        OLEDS[i].display->setCursor(15, 34);
-        OLEDS[i].display->print("3");
-
-        OLEDS[i].display->setFont(u8g2_font_profont10_tf);
-
-        tmp_str = String(last_c_1);
-        tmp_str.replace("(", "");
-        tmp_str.replace(")", "");
-        if (tot != 0) {
-          tmp_str = ">" + tmp_str + "<";
-        }
-        OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 18);
-        OLEDS[i].display->print(tmp_str);
-
-        tmp_str = String(last_c_2);
-        tmp_str.replace("(", "");
-        tmp_str.replace(")", "");
-        OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 26);
-        OLEDS[i].display->print(tmp_str);
-
-        tmp_str = String(last_c_3);
-        tmp_str.replace("(", "");
-        tmp_str.replace(")", "");
-        OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 34);
-        OLEDS[i].display->print(tmp_str);
-               
-        // bottom screen
-
         if (tot != 0) { // if transmit
           digitalWrite(LED_QSO, HIGH);
           OLEDS[i].display->setContrast(255);
+          OLEDS[i].display->setDrawColor(1);
+
+          tmp_str = String(last_c_1);
+          tmp_str.replace("(", "");
+          tmp_str.replace(")", "");
+          
+          OLEDS[i].display->setFont(u8g2_font_luBS10_te);
+          OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 28);
+          OLEDS[i].display->print(tmp_str.c_str());
+
           OLEDS[i].display->setFont(u8g2_font_luBS18_tn);
           OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(last_d_1)) / 2 , 58);
           OLEDS[i].display->print(last_d_1);
-
-          OLEDS[i].display->setFont(u8g2_font_open_iconic_play_1x_t);
-          OLEDS[i].display->drawGlyph(1, 26, 0x004c);
         }
-        else {  // else histogram
+        else {
           digitalWrite(LED_QSO, LOW);
           OLEDS[i].display->setContrast(1);
+          OLEDS[i].display->setDrawColor(1);
           
+          OLEDS[i].display->setFont(u8g2_font_blipfest_07_tr);
+  
+          strncpy (hour, last_h_1, 5);
+          OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(hour) - 1, 18);
+          OLEDS[i].display->print(hour);
+          OLEDS[i].display->setCursor(15, 18);
+          OLEDS[i].display->print("1");
+          
+          strncpy (hour, last_h_2, 5);
+          OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(hour) - 1, 26);
+          OLEDS[i].display->print(hour);
+          OLEDS[i].display->setCursor(15, 26);
+          OLEDS[i].display->print("2");
+          
+          strncpy (hour, last_h_3, 5);
+          OLEDS[i].display->setCursor(OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(hour) - 1, 34);
+          OLEDS[i].display->print(hour);
+          OLEDS[i].display->setCursor(15, 34);
+          OLEDS[i].display->print("3");
+  
+          OLEDS[i].display->setFont(u8g2_font_profont10_tf);
+  
+          tmp_str = String(last_c_1);
+          tmp_str.replace("(", "");
+          tmp_str.replace(")", "");
+          if (tot != 0) {
+            tmp_str = ">" + tmp_str + "<";
+          }
+          OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 18);
+          OLEDS[i].display->print(tmp_str);
+  
+          tmp_str = String(last_c_2);
+          tmp_str.replace("(", "");
+          tmp_str.replace(")", "");
+          OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 26);
+          OLEDS[i].display->print(tmp_str);
+  
+          tmp_str = String(last_c_3);
+          tmp_str.replace("(", "");
+          tmp_str.replace(")", "");
+          OLEDS[i].display->setCursor((OLEDS[i].display->getDisplayWidth() - OLEDS[i].display->getUTF8Width(tmp_str.c_str())) / 2 , 34);
+          OLEDS[i].display->print(tmp_str);
+       
           int x = 4;
           int tmp = 0;
           
